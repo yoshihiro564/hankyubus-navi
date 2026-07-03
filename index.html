@@ -61,6 +61,7 @@
         .qr-holder { margin-top: 8px; }
         .qr-wrap { text-align: center; background: #fff; border: 1px solid #e9ecef; border-radius: 6px; padding: 10px; }
         .qr-wrap img { display: block; margin: 0 auto; max-width: none; image-rendering: pixelated; }
+        .qr-wrap svg { display: block; margin: 0 auto; width: 172px; height: 172px; }
         .qr-url { font-size: 0.7em; color: #495057; word-break: break-all; margin-top: 6px; font-family: monospace; }
         .qr-tip { font-size: 0.7em; color: #868e96; margin-top: 4px; }
         .leaflet-popup-content { margin: 12px; }
@@ -2460,25 +2461,34 @@ function buildPopup(stop) {
 function initMarkers() {
     stopsData.forEach(stop => {
         const marker = L.marker([stop.lat, stop.lng]);
-        marker.bindPopup(() => buildPopup(stop), { maxWidth: 280 });
+        marker.bindPopup(buildPopup(stop), { maxWidth: 300, autoPan: true });
         markerCache[stop._id] = marker;   // ← コードではなく一意IDで管理（重複コード対策）
     });
 }
 
 window.toggleQR = function (btn, code) {
     const holder = btn.parentElement.querySelector('.qr-holder');
+    if (!holder) return;
     if (holder.getAttribute('data-open') === '1') {
-        holder.innerHTML = ''; holder.setAttribute('data-open', '0');
-        btn.textContent = 'QRコードを表示'; return;
+        holder.innerHTML = '';
+        holder.setAttribute('data-open', '0');
+        btn.textContent = 'QRコードを表示';
+    } else {
+        const url = 'https://transfer-cloud.navitime.biz/hankyubus/courses?external-busstop=' + code;
+        try {
+            const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+            const svg = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+            holder.innerHTML = `<div class="qr-wrap">${svg}`
+                + `<div class="qr-url">${url}</div>`
+                + `<div class="qr-tip">読み取ると、この停留所の時刻表・接近情報ページが開きます</div></div>`;
+            holder.setAttribute('data-open', '1');
+            btn.textContent = 'QRを閉じる';
+        } catch (e) {
+            holder.innerHTML = `<div class="qr-tip" style="color:#dc3545">QRの生成に失敗しました: ${e.message}</div>`;
+        }
     }
-    const url = location.origin + location.pathname + '?code=' + code;
-    const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
-    holder.innerHTML = `<div class="qr-wrap">${qr.createImgTag(4, 8)}`
-        + `<div class="qr-url">${url}</div>`
-        + `<div class="qr-tip">スマホのカメラで読み取ると、この停留所が開きます</div></div>`;
-    holder.setAttribute('data-open', '1');
-    btn.textContent = 'QRを閉じる';
-    if (map._popup) setTimeout(() => map._popup.update && map._popup.update(), 0);
+    // 内容を再生成せずに枠だけ再計算（QRが消えないように update() は使わない）
+    try { const pop = map._popup; if (pop) { pop._updateLayout(); pop._adjustPan(); } } catch (e) {}
 };
 
 /* ==== 現在地から近い停留所 ==== */
