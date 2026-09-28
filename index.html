@@ -42,6 +42,7 @@
 
         /* 地図 */
         #map { flex: 1; height: 100%; background: #e9ecef; }
+        .gray-tiles { filter: grayscale(100%) brightness(1.05) contrast(0.9); }
         .stop-label { background: transparent; border: none; box-shadow: none; color: #333; font-size: 9px; font-weight: bold; text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff; white-space: nowrap; }
 
         /* ポップアップ */
@@ -2433,7 +2434,8 @@ stopsData.forEach((s, i) => { s._id = i; });
 const map = L.map('map').setView([34.75, 135.45], 11);
 L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
     attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>',
-    maxZoom: 18
+    maxZoom: 18,
+    className: 'gray-tiles'
 }).addTo(map);
 
 const markerLayer = L.layerGroup().addTo(map);
